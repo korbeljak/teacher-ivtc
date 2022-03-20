@@ -100,7 +100,7 @@ class ExcelToTest:
             category = "Teacher's Key"
             file_category = "key"
 
-        dt = self.time_of_gen.strftime("%-d. %-m. %Y")
+        dt = self.time_of_gen.strftime("%d. %m. %Y")
         file_dt = self.time_of_gen.strftime("%Y%m%d%H%M%S")
 
         doc.add_heading(f'{grp_name}: {category} ({dt})', 0)
@@ -117,7 +117,7 @@ class ExcelToTest:
             row_cells = table.add_row().cells
             row_cells[0].text = a_verb["base"]
             row_cells[1].text = a_verb["past_simple"]
-            row_cells[2].text = a_verb["past_participle"]
+            row_cells[2].text = a_verb["past_participle"] if a_verb["past_participle"] is not None else ""
             row_cells[3].text = a_verb["cz"]
 
         doc.add_page_break()
