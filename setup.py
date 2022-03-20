@@ -16,6 +16,7 @@ setup(
     packages=find_packages(),
     # add any additional packages that
     install_requires=["python-docx", "openpyxl"],
+    scripts=['bin/teacher_ivtc.py'],
     # needs to be installed along with your package. Eg: 'caer'
 
     keywords=['irregular verb', 'test', 'school', 'teacher'],

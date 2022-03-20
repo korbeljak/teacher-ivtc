@@ -1,3 +1,6 @@
+#! /usr/bin/env python3
+#! python3
+#! /usr/bin/python3
 from copy import deepcopy
 from datetime import datetime
 from os.path import stat
