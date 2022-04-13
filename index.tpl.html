@@ -2,16 +2,18 @@
 <html>
   <head>
     <title>IVTC &ndash; The Irregular Verb Test Creator</title>
+    <style>
+    </style>
   </head>
   <body>
-    <form>
+    <form enctype="multipart/form-data" method="post">
       <label for="database-xlsx">Database (.xlsx)</label>
       <input type="file" name="database-xlsx" id="database-xlsx" required="required"><br>
       <label for="variant-type">Variant Type</label>
       <select name="variant-type" id="variant-type" required="required">
-        <option value="animals" selected="selected" id="variant-type-0">Animals</option>
-        <option value="letters" id="variant-type-1">Letters</option>
-        <option value="numbers" id="variant-type-2">Numbers</option>
+        <option value="Animals" selected="selected">Animals</option>
+        <option value="Letters">Letters</option>
+        <option value="Numbers">Numbers</option>
       </select><br>
       <label for="variant-count">Variant Count</label>
       <input type="text" name="variant-count" value="2" id="variant-count" required="required"><br>

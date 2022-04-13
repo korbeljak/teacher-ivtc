@@ -46,8 +46,17 @@ class ExcelToTest:
 
         self.verb_cnt = verb_cnt
 
+        self.debug = False
+
         self.output_dir = output_dir
         assert output_dir.is_dir()
+
+    def enable_debugging(self):
+        self.debug = True
+
+    def _l(self, msg):
+        if self.debug:
+            print(msg)
 
     def _get_group_name(self, i: int) -> str:
         if self.variant_type == "Animals":
@@ -98,7 +107,8 @@ class ExcelToTest:
 
         dt, file_dt = self.get_time_str()
 
-        doc.add_heading(f'{grp_name}: {category} ({dt})', 0)
+        doc.add_heading(
+            f'{grp_name}: a {category} ___ / {self.verb_cnt*3} pts    Name: ________________', 2)
         doc.add_paragraph(
             'Fill in the empty cells with correct versions and/or translations of the correct irregular verbs.')
 
@@ -123,10 +133,10 @@ class ExcelToTest:
     def compose_docx(self, variants: list[dict]):
 
         for a_group in variants:
-            print("Composing teacher's key...")
+            self._l("Composing teacher's key...")
             self.compose_a_doc(a_group, True, variants[a_group]["teacher"])
 
-            print("Composing student's test...")
+            self._l("Composing student's test...")
             self.compose_a_doc(a_group, False, variants[a_group]["student"])
 
     @staticmethod
@@ -170,25 +180,25 @@ class ExcelToTest:
                 all_verbs.append(a_verb)
             row_cnt += 1
 
-        print(f"Parsed {row_cnt} rows!")
+        self._l(f"Parsed {row_cnt} rows!")
         assert row_cnt >= self.verb_cnt
 
-        # print(json.dumps(all_verbs, indent=2))
+        # self._l(json.dumps(all_verbs, indent=2))
 
         variants = {}
 
         for i in range(self.variant_cnt):
             group_name = self._get_group_name(i)
-            print(f"Generating variant {group_name}...")
+            self._l(f"Generating variant {group_name}...")
 
             verb_selection = random.sample(all_verbs, self.verb_cnt)
-            # print(json.dumps(verb_selection, indent=2))
+            # self._l(json.dumps(verb_selection, indent=2))
 
             random.shuffle(verb_selection)
-            # print(json.dumps(verb_selection, indent=2))
+            # self._l(json.dumps(verb_selection, indent=2))
             variants[group_name] = {}
             variants[group_name]["teacher"] = verb_selection
             variants[group_name]["student"] = self.studentize(verb_selection)
 
-        print(f"{variants}")
+        self._l(f"{variants}")
         self.compose_docx(variants)
