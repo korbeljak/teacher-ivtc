@@ -18,7 +18,7 @@ setup(
     install_requires=["python-docx", "openpyxl"],
     scripts=['bin/teacher_ivtc.py',
              'bin/teacher_ivtc_gui.py',
-             'teacher_ivtc_webui.py'],
+             'bin/teacher_ivtc_webui.py'],
     # needs to be installed along with your package. Eg: 'caer'
 
     keywords=['irregular verb', 'test', 'school', 'teacher'],
