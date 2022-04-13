@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.2'
+VERSION = '0.0.4'
 DESCRIPTION = 'Irregular Verbs Test Creator'
 LONG_DESCRIPTION = 'Irregular Verbs Test Creator'
 
@@ -13,7 +13,8 @@ setup(
     author_email="<korbel.jak@gmail.com>",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
-    packages=find_packages(),
+    package_dir={"": "src"},
+    packages=setuptools.find_packages(where="src"),
     # add any additional packages that
     install_requires=["python-docx", "openpyxl"],
     scripts=['bin/teacher_ivtc.py',

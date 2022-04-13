@@ -49,11 +49,12 @@ headers = []
 
 try:
     try:
-        from _ivtc import ExcelToTest
+        from teacher_ivtc.ivtc import ExcelToTest
     except:
         import sys
-        sys.path.append(str(Path(__file__).parent))
-        from _ivtc import ExcelToTest
+        sys.path.append(
+            str(Path(__file__).parent.parent / "src" / "teacher_ivtc"))
+        from ivtc import ExcelToTest
 
     form = FieldStorage()
 

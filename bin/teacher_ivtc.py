@@ -13,11 +13,11 @@ import tkinter as tk
 import tkinter.font as tk_font
 
 try:
-    from _ivtc import ExcelToTest
+    from teacher_ivtc.ivtc import ExcelToTest
 except:
     import sys
-    sys.path.append(str(Path(__file__).parent.parent))
-    from _ivtc import ExcelToTest
+    sys.path.append(str(Path(__file__).parent.parent / "src" / "teacher_ivtc"))
+    from ivtc import ExcelToTest
 
 
 class Style:
