@@ -146,12 +146,13 @@ class ExcelToTest:
 
         idxs = ["base", "past_simple", "past_participle", "cz"]
         total_cnt = len(idxs)
-
+        line_nr = 0
         for a_verb in students_verbs:
+            line_nr += 1
             choice = random.randint(0, total_cnt - 1)
             if a_verb[idxs[choice]] is None:
                 choice = (choice + 1) % total_cnt
-                assert a_verb[idxs[choice]] is not None
+                assert a_verb[idxs[choice]] is not None, f"line: {line_nr}, total {total_cnt} {a_verb}"
 
             for idx in idxs:
                 if idx != idxs[choice]:
@@ -177,6 +178,9 @@ class ExcelToTest:
                     "past_participle": self.clean_str(row[2].value),
                     "cz": self.clean_str(row[3].value)
                 }
+
+                if a_verb["base"] is None and a_verb["past_simple"] is None:
+                    break
                 all_verbs.append(a_verb)
             row_cnt += 1
 

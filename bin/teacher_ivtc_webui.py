@@ -60,8 +60,6 @@ try:
 
     will_generate = False
     if form.getvalue("generate", None) is not None:
-        headers.append(
-            "Content-Type: application/zip, application/octet-stream")
 
         will_generate = True
 
@@ -92,8 +90,6 @@ try:
                               verb_cnt=verb_cnt,
                               output_dir=output_dir)
             ett.xform()
-            headers.append(
-                f"Content-Disposition: inline, filename=test_{ett.get_time_str()[1]}.zip")
 
             zipfp = tmpdp / "test.zip"
             with ZipFile(zipfp, "w", compression=ZIP_LZMA) as zfp:
@@ -105,6 +101,10 @@ try:
 
             zipfp_size = zipfp.stat().st_size
 
+            headers.append(
+                "Content-Type: application/zip, application/octet-stream")
+            headers.append(
+                f"Content-Disposition: inline, filename=test_{ett.get_time_str()[1]}.zip")
             headers.append(f"Content-Length: {zipfp_size}")
 
             for header in headers:
