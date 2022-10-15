@@ -118,8 +118,10 @@ class ExcelToTest:
             idx += 1
         for a_row in rows:
             row_cells = table.add_row().cells
+            assert row_cells is not None
             idx = 0
             for a_heading in self.headings:
+                assert a_row[self.headings[idx]] is not None, f"eq {a_row}"
                 row_cells[idx].text = a_row[self.headings[idx]]
                 idx += 1
 
@@ -197,6 +199,9 @@ class ExcelToTest:
                     a_row_id += 1
                     if a_row[a_col]:
                         is_empty = False
+                    else:
+                        if not is_empty:
+                            a_row[a_col] = ""
 
                 if is_empty:
                     break
