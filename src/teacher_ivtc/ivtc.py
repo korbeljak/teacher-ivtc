@@ -106,7 +106,7 @@ class ExcelToTest:
         dt, file_dt = self.get_time_str()
 
         doc.add_heading(
-            f'{grp_name}: a {category} ___ / {self.db_val_row_cnt*self.headings_cnt-1} pts    Name: ________________', 2)
+            f'{grp_name}: a {category} ___ / {self.db_val_row_cnt*(self.headings_cnt-1)} pts    Name: ________________', 2)
         if "Instruction" in self.cfg_opts.keys():
             doc.add_paragraph(self.cfg_opts["Instruction"])
 
