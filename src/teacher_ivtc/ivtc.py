@@ -1,6 +1,7 @@
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
+from typing import Tuple
 import random
 
 from docx import Document
@@ -10,6 +11,7 @@ import openpyxl as op
 class ExcelToTest:
 
     DB_SHEET_NAME: str = "DB"
+    CFG_SHEET_NAME: str = "Configuration"
 
     ANIMALS = ["unicorns", "dragons", "ponies",
                "griffins", "hippos", "otters", "bears"]
@@ -19,14 +21,16 @@ class ExcelToTest:
     db_file: Path
     variant_type: str
     variant_cnt: int
-    verb_cnt: int
+    db_val_row_cnt: int
     output_dir: Path
+    headings = Tuple[str]
+    headings_cnt: int
 
     def __init__(self,
                  db_file: Path,
                  variant_type: str,
                  variant_cnt: int,
-                 verb_cnt: int,
+                 db_val_row_cnt: int,
                  output_dir: Path):
 
         self.time_of_gen = datetime.now()
@@ -44,7 +48,7 @@ class ExcelToTest:
         if variant_type == "Letters":
             assert variant_cnt <= len(self.LETTERS)
 
-        self.verb_cnt = verb_cnt
+        self.db_val_row_cnt = db_val_row_cnt
 
         self.debug = False
 
@@ -74,12 +78,6 @@ class ExcelToTest:
     def _load_xslx(self):
         return op.load_workbook(str(self.db_file))
 
-    def _check_format(self, db_sheet):
-        assert db_sheet["A1"].value == "Base Form"
-        assert db_sheet["B1"].value == "Past Simple"
-        assert db_sheet["C1"].value == "Past Participle"
-        assert db_sheet["D1"].value == "Czech Translation"
-
     @staticmethod
     def clean_str(dirty_str: str) -> str:
         if dirty_str is not None:
@@ -95,7 +93,7 @@ class ExcelToTest:
 
     def compose_a_doc(self, grp_name: str,
                       is_teacher: bool,
-                      verbs: list[dict]):
+                      rows: list[dict]):
         grp_name = grp_name.capitalize()
 
         doc = Document()
@@ -108,22 +106,22 @@ class ExcelToTest:
         dt, file_dt = self.get_time_str()
 
         doc.add_heading(
-            f'{grp_name}: a {category} ___ / {self.verb_cnt*3} pts    Name: ________________', 2)
-        doc.add_paragraph(
-            'Fill in the empty cells with correct versions and/or translations of the correct irregular verbs.')
+            f'{grp_name}: a {category} ___ / {self.db_val_row_cnt*self.headings_cnt-1} pts    Name: ________________', 2)
+        if "Instruction" in self.cfg_opts.keys():
+            doc.add_paragraph(self.cfg_opts["Instruction"])
 
-        table = doc.add_table(rows=1, cols=4)
+        table = doc.add_table(rows=1, cols=self.headings_cnt)
         hdr_cells = table.rows[0].cells
-        hdr_cells[0].text = 'Basic Form'
-        hdr_cells[1].text = 'Past Simple'
-        hdr_cells[2].text = 'Past Participle'
-        hdr_cells[3].text = 'Czech Translation'
-        for a_verb in verbs:
+        idx = 0
+        for a_heading in self.headings:
+            hdr_cells[idx].text = self.headings[idx]
+            idx += 1
+        for a_row in rows:
             row_cells = table.add_row().cells
-            row_cells[0].text = a_verb["base"]
-            row_cells[1].text = a_verb["past_simple"]
-            row_cells[2].text = a_verb["past_participle"] if a_verb["past_participle"] is not None else ""
-            row_cells[3].text = a_verb["cz"]
+            idx = 0
+            for a_heading in self.headings:
+                row_cells[idx].text = a_row[self.headings[idx]]
+                idx += 1
 
         doc.add_page_break()
 
@@ -139,70 +137,98 @@ class ExcelToTest:
             self._l("Composing student's test...")
             self.compose_a_doc(a_group, False, variants[a_group]["student"])
 
-    @staticmethod
-    def studentize(teachers_verbs: list[dict]) -> dict:
+    def studentize(self, teachers_rows: list[dict]) -> dict:
 
-        students_verbs = deepcopy(teachers_verbs)
+        students_rows = deepcopy(teachers_rows)
 
-        idxs = ["base", "past_simple", "past_participle", "cz"]
-        total_cnt = len(idxs)
+        idxs = self.headings
+        total_cnt = self.headings_cnt
         line_nr = 0
-        for a_verb in students_verbs:
+        for a_row in students_rows:
             line_nr += 1
             choice = random.randint(0, total_cnt - 1)
-            if a_verb[idxs[choice]] is None:
+            if a_row[idxs[choice]] is None:
                 choice = (choice + 1) % total_cnt
-                assert a_verb[idxs[choice]] is not None, f"line: {line_nr}, total {total_cnt} {a_verb}"
+                assert a_row[idxs[choice]
+                             ] is not None, f"line: {line_nr}, total {total_cnt} {a_row}"
 
             for idx in idxs:
                 if idx != idxs[choice]:
-                    a_verb[idx] = ""
+                    a_row[idx] = ""
 
-        return students_verbs
+        return students_rows
 
-    def xform(self):
-        wb = self._load_xslx()
-
-        db_sheet = wb[self.DB_SHEET_NAME]
-        self._check_format(db_sheet)
-
+    def _load_cfg_opts(self, cfg_sheet):
         row_cnt = 0
+        self.cfg_opts = {}
 
-        all_verbs = []
+        for row in cfg_sheet.iter_rows():
+            a_row = {}
+            a_row_id = 0
+            is_empty = True
+
+            if row[0].value is None:
+                break
+            self.cfg_opts[row[0].value] = row[1].value
+            row_cnt += 1
+        self._l(f"Loaded {row_cnt} config opts.")
+
+    def _load_db(self, db_sheet):
+        row_cnt = 0
+        all_rows = []
+        self.headings = ()
 
         for row in db_sheet.iter_rows():
-            if row_cnt != 0:
-                a_verb = {
-                    "base": self.clean_str(row[0].value),
-                    "past_simple": self.clean_str(row[1].value),
-                    "past_participle": self.clean_str(row[2].value),
-                    "cz": self.clean_str(row[3].value)
-                }
+            if row_cnt == 0:
+                # Top row.
+                for col in row:
+                    if col.value is None:
+                        break
+                    self.headings += (col.value,)
+                self.headings_cnt = len(self.headings)
+                self._l(f"Headings ({self.headings_cnt}): {self.headings}")
+                row_cnt += 1
+            else:
+                a_row = {}
+                a_row_id = 0
+                is_empty = True
+                for a_col in self.headings:
+                    a_row[a_col] = self.clean_str(row[a_row_id].value)
+                    a_row_id += 1
+                    if a_row[a_col]:
+                        is_empty = False
 
-                if a_verb["base"] is None and a_verb["past_simple"] is None:
+                if is_empty:
                     break
-                all_verbs.append(a_verb)
-            row_cnt += 1
+                all_rows.append(a_row)
+                row_cnt += 1
 
         self._l(f"Parsed {row_cnt} rows!")
-        assert row_cnt >= self.verb_cnt
+        assert row_cnt >= self.db_val_row_cnt
+        return all_rows
 
-        # self._l(json.dumps(all_verbs, indent=2))
-
+    def _generate_variants(self, all_rows):
         variants = {}
 
         for i in range(self.variant_cnt):
             group_name = self._get_group_name(i)
             self._l(f"Generating variant {group_name}...")
 
-            verb_selection = random.sample(all_verbs, self.verb_cnt)
-            # self._l(json.dumps(verb_selection, indent=2))
+            row_selection = random.sample(all_rows, self.db_val_row_cnt)
+            # self._l(json.dumps(row_selection, indent=2))
 
-            random.shuffle(verb_selection)
-            # self._l(json.dumps(verb_selection, indent=2))
+            random.shuffle(row_selection)
+            # self._l(json.dumps(row_selection, indent=2))
             variants[group_name] = {}
-            variants[group_name]["teacher"] = verb_selection
-            variants[group_name]["student"] = self.studentize(verb_selection)
-
+            variants[group_name]["teacher"] = row_selection
+            variants[group_name]["student"] = self.studentize(row_selection)
         self._l(f"{variants}")
+        return variants
+
+    def xform(self):
+        wb = self._load_xslx()
+
+        self._load_cfg_opts(wb[self.CFG_SHEET_NAME])
+        all_rows = self._load_db(wb[self.DB_SHEET_NAME])
+        variants = self._generate_variants(all_rows)
         self.compose_docx(variants)

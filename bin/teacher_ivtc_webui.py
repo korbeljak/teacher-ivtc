@@ -87,7 +87,7 @@ try:
             ett = ExcelToTest(db_file=db_file,
                               variant_type=variant_type,
                               variant_cnt=variant_cnt,
-                              verb_cnt=verb_cnt,
+                              db_val_row_cnt=verb_cnt,
                               output_dir=output_dir)
             ett.xform()
 

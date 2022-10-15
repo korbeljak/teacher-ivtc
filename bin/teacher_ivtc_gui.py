@@ -271,7 +271,7 @@ class IrregularVerbs(tk.Tk):
         ett = ExcelToTest(db_file=self.xlsx_db_file_fld.get_value(),
                           variant_type=self.variant_type_fld.get_value(),
                           variant_cnt=self.variant_cnt_fld.get_value(),
-                          verb_cnt=self.verb_cnt_fld.get_value(),
+                          db_val_row_cnt=self.verb_cnt_fld.get_value(),
                           output_dir=self.output_dir_fld.get_value())
 
         ett.xform()
