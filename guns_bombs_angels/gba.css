@@ -7,6 +7,15 @@ div.gba_cell
     overflow: hidden;
 }
 
+div.gba_cell_gameover
+{
+    float: left;
+    border: 1px solid red;
+    text-align: center;
+    cursor: pointer;
+    overflow: hidden;
+}
+
 div.gba_frame
 {
     clear: both;

@@ -97,14 +97,9 @@ class GbaCell
         {
             this.is_hidden = false;
             this.cell.textContent = gba_type_translate(this.type);
+            
+            this.gba.game_step(this.type)
         }
-        else
-        {
-            this.is_hidden = true;
-            this.cell.textContent = "?";
-        }
-        
-        this.gba.game_step(this.type)
     }
     
     render(root_e)
@@ -173,7 +168,7 @@ class GbaTeam
     constructor(lives, id)
     {
         this.lives = lives;
-        this.name = "Team "+id;
+        this.name = "Team "+(id+1);
         this.id = id
         this.state = GbaTeamState.Inactive;
         
@@ -336,11 +331,14 @@ class GunsBombsAngels
     this.gba_div_out = document.createElement("div");
     this.form = document.createElement("form");
     this.sts_frme = document.createElement("div");
+    this.total_moves = 0
+    this.moves_done = 0
   }
   
   launch_game()
   {
         this.store_vals();
+        this.total_moves = this.rows * this.cols
         this.generate_fields();
         this.add_teams();
         this.clear();
@@ -356,10 +354,9 @@ class GunsBombsAngels
     this.teams[cur_team].activate();
   }
   
-  add_team()
+  add_team(id)
   {
-    this.teams[this.team_cnt] = new GbaTeam(this.team_lives, ""+(this.team_cnt+1));
-    this.team_cnt++;
+    this.teams[id] = new GbaTeam(this.team_lives, id);
   }
   
   pick_tgt_team(src_team_id)
@@ -370,6 +367,16 @@ class GunsBombsAngels
         this.teams[tgt_id].target()
         return this.teams[tgt_id]
     }
+    else
+    {
+        for(let i = 0; i < this.team_cnt; i++)
+        {
+            if (this.teams[i].get_id() != src_team_id)
+            {
+                this.teams[i].target()
+            }
+        }
+    }
     
   }
   
@@ -378,8 +385,65 @@ class GunsBombsAngels
     return this.teams[this.cur_team]
   }
   
+  game_over()
+  {
+    
+  }
+  
+  check_winner()
+  {
+    let alive_arr = new Array();
+    
+    for(let i = 0; i < this.team_cnt; i++)
+    {
+        if(!this.teams[i].is_dead())
+        {
+            alive_arr.push(this.teams[i]);
+        }
+    }
+    
+    // Sort desc by lives
+    alive_arr.sort(function(a, b){return b.lives - a.lives});
+    if (alive_arr.length == 1)
+    {
+        alert("Game over: "+alive_arr[0].name+" wins!")
+        for (let i = 0; i < this.table.length; i++)
+        {
+            if (this.table[i].is_hidden)
+            {
+                this.table[i].is_hidden = false
+                this.table[i].cell.className = "gba_cell_gameover";
+                this.table[i].cell.textContent = gba_type_translate(this.table[i].type);
+            }
+        }
+    }
+    else if(this.moves_done == this.total_moves)
+    {
+        let str = "Game over: "
+        let max = alive_arr[0].lives
+        let tie_cnt = 0
+        for(let i = 0; i < alive_arr.length; i++)
+        {
+            if (alive_arr[i].lives == max)
+            {
+                tie_cnt++;
+                str += alive_arr[i].name + " wins! "
+            }
+        }
+        
+        if (tie_cnt > 1)
+        {
+            str = "It's a TIE! "+str
+        }
+        
+        alert(str)
+    }
+  }
+  
   next_team()
   {
+    this.check_winner();
+    
     let cur_team = this.get_cur_team();
     cur_team.deactivate();
     
@@ -389,6 +453,7 @@ class GunsBombsAngels
   
   game_step(action)
   {
+    this.moves_done++;
     let cur_team = this.get_cur_team();
     let tgt_team = null
     switch(action)
@@ -434,9 +499,9 @@ class GunsBombsAngels
   
   add_teams()
   {
-    for(let i = 0; i < this.teams_e.get(); i++)
+    for(let i = 0; i < this.team_cnt; i++)
     {
-        this.add_team();
+        this.add_team(i);
     }
   }
   
@@ -517,7 +582,8 @@ class GunsBombsAngels
     }
     for (let i = 0; i < none_num; i++)
     {
-        this.table.push(new GbaCell(GbaType.Dagger,
+        this.table.push(new GbaCell(this,
+                                    GbaType.Dagger,
                                     this.cell_dim_px,
                                     this.cell_dim_px));
     }
@@ -527,8 +593,10 @@ class GunsBombsAngels
   
   store_vals()
   {
-    this.rows = this.rows_e.get();
-    this.cols = this.cols_e.get();
+    this.rows = parseInt(this.rows_e.get())
+    this.cols = parseInt(this.cols_e.get())
+    this.team_cnt = parseInt(this.teams_e.get())
+    this.team_lives = parseInt(this.lives_e.get())
     
   }
   
