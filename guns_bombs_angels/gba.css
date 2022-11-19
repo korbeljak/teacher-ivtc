@@ -1,0 +1,92 @@
+div.gba_cell
+{
+    float: left;
+    border: 1px solid black;
+    text-align: center;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+div.gba_frame
+{
+    clear: both;
+    margin-top: 1em;
+}
+
+div.gba_field
+{
+    float: left;
+    overflow: hidden;
+}
+
+div.gba_col_heading
+{
+    float: left;
+    text-align: center;
+    border-bottom: 1px solid black;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+div.gba_row_heading
+{
+    text-align: center;
+    border-bottom: 1px solid black;
+    border-top: 1px solid black;
+    border-right: 1px solid black;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+div.gba_y_axis
+{
+    float: left;
+}
+
+div.team_box
+{
+    width: 80px;
+    margin-right: 2px;
+    float:left;
+    text-align: center;
+    margin-bottom: 2em;
+}
+
+.tb_inactive
+{
+    border: 2px solid #ccc;
+    color: black;
+}
+
+.tb_active
+{
+    border: 3px solid green;
+    color: black;
+}
+
+.tb_target
+{
+    border: 2px solid red;
+    color: black;
+}
+
+.tb_dead
+{
+    border: 2px solid #ccc;
+    color: black;
+}
+
+div.team_box_name
+{
+    color: black;
+    font-weight: bold;
+    
+}
+
+div.team_box_lives
+{
+    color: black;
+    
+}
