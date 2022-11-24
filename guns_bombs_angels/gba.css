@@ -61,6 +61,7 @@ div.team_box
     float:left;
     text-align: center;
     margin-bottom: 2em;
+    overflow: hidden;
 }
 
 .tb_inactive
@@ -83,8 +84,8 @@ div.team_box
 
 .tb_dead
 {
-    border: 2px solid #ccc;
-    color: black;
+    border: 2px solid #000;
+    color: red;
 }
 
 div.team_box_name
@@ -98,4 +99,15 @@ div.team_box_lives
 {
     color: black;
     
+}
+
+.dagger-cursor {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🗡️</text></svg>")
+      16 0, auto;
+}
+
+
+.gun-cursor {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='48' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🔫</text></svg>")
+      16 0, auto;
 }

@@ -93,18 +93,18 @@ class GbaCell
     
     click_action()
     {
-        if (this.is_hidden)
+        if (this.is_hidden && !this.gba.click_disable)
         {
             this.is_hidden = false;
             this.cell.textContent = gba_type_translate(this.type);
             
-            this.gba.game_step(this.type)
+            this.gba.game_step(this.type);
         }
     }
     
     render(root_e)
     {
-        root_e.appendChild(this.cell)
+        root_e.appendChild(this.cell);
     }
 }
 
@@ -123,9 +123,9 @@ class NumInput
     
     render(root_e)
     {
-        root_e.appendChild(this.label)
-        root_e.appendChild(this.input)
-        root_e.appendChild(document.createElement("br"))
+        root_e.appendChild(this.label);
+        root_e.appendChild(this.input);
+        root_e.appendChild(document.createElement("br"));
     }
     
     get()
@@ -158,33 +158,53 @@ class GenBtn
     {
         this.root_e = root_e;
         
-        this.root_e.appendChild(this.btn)
-        this.root_e.appendChild(document.createElement("br"))
+        this.root_e.appendChild(this.btn);
+        this.root_e.appendChild(document.createElement("br"));
     }
 }
 
 class GbaTeam
 {
-    constructor(lives, id)
+    constructor(lives, id, gba)
     {
+        this.gba = gba;
         this.lives = lives;
         this.name = "Team "+(id+1);
-        this.id = id
+        this.id = id;
         this.state = GbaTeamState.Inactive;
         
         this.team_box = document.createElement("div");
-        this.team_box.className = "team_box tb_inactive"
+        this.team_box.className = "team_box tb_inactive";
+        this.team_box.onclick = this.click_action.bind(this);
         
         this.team_box_name = document.createElement("div");
-        this.team_box_name.className = "team_box_name"
-        this.team_box_name.textContent = this.name
+        this.team_box_name.className = "team_box_name";
+        this.team_box_name.textContent = this.name;
         
         this.team_box_lives = document.createElement("div");
-        this.team_box_lives.className = "team_box_lives"
+        this.team_box_lives.className = "team_box_lives";
         this.team_box_lives.textContent = ""+lives;
         
         this.team_box.appendChild(this.team_box_name);
         this.team_box.appendChild(this.team_box_lives);
+    }
+    
+    click_action()
+    {
+        if (this.state == GbaTeamState.Target)
+        {
+            switch(this.gba.cur_action)
+            {
+                case GbaType.Dagger:
+                    this.take_dagger_hit();
+                    break;
+                case GbaType.Gun:
+                    this.take_gun_hit();
+                    break;
+            }
+            
+            this.gba.next_team();
+        }
     }
     
     get_team_box()
@@ -271,6 +291,7 @@ class GbaTeam
     {
         this.lives = 0;
         this.state = GbaTeamState.Dead;
+        this.draw();
     }
     
     is_dead()
@@ -312,6 +333,8 @@ class GunsBombsAngels
 {
   constructor()
   {
+    this.click_disable = false
+    this.cur_action = null
     this.cur_team = 0;
     this.team_cnt = 0;
     this.teams = new Array();
@@ -356,7 +379,7 @@ class GunsBombsAngels
   
   add_team(id)
   {
-    this.teams[id] = new GbaTeam(this.team_lives, id);
+    this.teams[id] = new GbaTeam(this.team_lives, id, this);
   }
   
   pick_tgt_team(src_team_id)
@@ -369,15 +392,24 @@ class GunsBombsAngels
     }
     else
     {
+        let one_tgt = null
+        let tgt_cnt = 0
         for(let i = 0; i < this.team_cnt; i++)
         {
-            if (this.teams[i].get_id() != src_team_id)
+            if (!this.teams[i].is_dead() && this.teams[i].get_id() != src_team_id)
             {
                 this.teams[i].target()
+                one_tgt = this.teams[i]
+                tgt_cnt++;
             }
         }
+        
+        if (tgt_cnt == 1)
+        {
+            return one_tgt;
+        }
     }
-    
+    return null
   }
   
   get_cur_team()
@@ -442,26 +474,50 @@ class GunsBombsAngels
   
   next_team()
   {
+    
+    // Reset all team states.
+    for(let i = 0; i < this.team_cnt; i++)
+    {
+        if (!this.teams[i].is_dead())
+        {
+            this.teams[i].state = GbaTeamState.Inactive;
+            this.teams[i].draw();
+        }
+    }
+    
     this.check_winner();
     
-    let cur_team = this.get_cur_team();
-    cur_team.deactivate();
-    
-    this.cur_team = (this.cur_team + 1) % this.team_cnt;
+    do
+    {
+        this.cur_team = (this.cur_team + 1) % this.team_cnt;
+    } while (this.teams[this.cur_team].is_dead());
     this.teams[this.cur_team].activate();
+    
+    document.body.className = "";
+    this.click_disable = false;
   }
   
   game_step(action)
   {
+    this.click_disable = true;
     this.moves_done++;
     let cur_team = this.get_cur_team();
     let tgt_team = null
+    this.cur_action = action;
     switch(action)
     {
         case GbaType.Dagger:
             tgt_team = this.pick_tgt_team(cur_team.get_id());
-            tgt_team.take_dagger_hit();
-            tgt_team.draw();
+            if (tgt_team != null)
+            {
+                tgt_team.take_dagger_hit();
+                tgt_team.draw();
+            }
+            else
+            {
+                document.body.className = "dagger-cursor";
+                return;
+            }
             break;
         case GbaType.Bomb:
             cur_team.take_bomb_hit();
@@ -471,8 +527,16 @@ class GunsBombsAngels
             break;
         case GbaType.Gun:
             tgt_team = this.pick_tgt_team(cur_team.get_id());
-            tgt_team.take_gun_hit();
-            tgt_team.draw();
+            if (tgt_team != null)
+            {
+                tgt_team.take_gun_hit();
+                tgt_team.draw();
+            }
+            else
+            {
+                document.body.className = "gun-cursor";
+                return;
+            }
             break;
         case GbaType.Angel:
             cur_team.take_angel();
@@ -483,8 +547,7 @@ class GunsBombsAngels
     }
     
     cur_team.draw();
-    
-    this.next_team()
+    this.next_team();
   }
   
   render(root_e)
