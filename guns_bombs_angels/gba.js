@@ -353,8 +353,8 @@ class GunsBombsAngels
 {
   constructor()
   {
-    this.click_disable = true
-    this.cur_action = null
+    this.click_disable = true;
+    this.cur_action = null;
     this.cur_team = 0;
     this.team_cnt = 0;
     this.teams = new Array();
@@ -374,8 +374,10 @@ class GunsBombsAngels
     this.gba_div_out = document.createElement("div");
     this.form = document.createElement("form");
     this.sts_frme = document.createElement("div");
-    this.total_moves = 0
-    this.moves_done = 0
+    this.sts_indicator = document.createElement("div");
+    this.sts_indicator.className = "status-indicator";
+    this.total_moves = 0;
+    this.moves_done = 0;
   }
   
   launch_game()
@@ -393,6 +395,8 @@ class GunsBombsAngels
   
   state_pick_team()
   {
+    this.sts_indicator.textContent = "Answer a question!"
+    
     this.click_disable = true;
     document.body.className = "select-cursor";
     for(let i = 0; i < this.team_cnt; i++)
@@ -406,6 +410,7 @@ class GunsBombsAngels
   
   state_select_action(cur_team_id)
   {
+    this.sts_indicator.textContent = "Pick a cell!"
     this.cur_team = cur_team_id;
     let cur_team = this.get_cur_team();
     for(let i = 0; i < this.team_cnt; i++)
@@ -421,6 +426,7 @@ class GunsBombsAngels
   
   state_target_team(action)
   {
+    this.sts_indicator.textContent = "Select your target!"
     this.click_disable = true;
     this.moves_done++;
     let cur_team = this.get_cur_team();
@@ -473,7 +479,7 @@ class GunsBombsAngels
   }
   
   state_finalize_round()
-  {    
+  {
     // Reset all team states.
     for(let i = 0; i < this.team_cnt; i++)
     {
@@ -484,16 +490,17 @@ class GunsBombsAngels
         }
     }
     
-    this.check_winner();
-    
-    do
+    if (!this.check_winner())
     {
-        this.cur_team = (this.cur_team + 1) % this.team_cnt;
-    } while (this.teams[this.cur_team].is_dead());
-    this.teams[this.cur_team].activate();
-    
-    document.body.className = "";
-    this.state_pick_team()
+      do
+      {
+          this.cur_team = (this.cur_team + 1) % this.team_cnt;
+      } while (this.teams[this.cur_team].is_dead());
+      this.teams[this.cur_team].activate();
+      
+      document.body.className = "";
+      this.state_pick_team()
+    } 
   }
   
   add_team(id)
@@ -538,6 +545,7 @@ class GunsBombsAngels
   
   check_winner()
   {
+    let game_over = false;
     let alive_arr = new Array();
     
     for(let i = 0; i < this.team_cnt; i++)
@@ -552,7 +560,7 @@ class GunsBombsAngels
     alive_arr.sort(function(a, b){return b.lives - a.lives});
     if (alive_arr.length == 1)
     {
-        alert("Game over: "+alive_arr[0].name+" wins!")
+        this.sts_indicator.textContent = "Game over: "+alive_arr[0].name+" wins!"
         for (let i = 0; i < this.table.length; i++)
         {
             if (this.table[i].is_hidden)
@@ -562,6 +570,8 @@ class GunsBombsAngels
                 this.table[i].cell.textContent = gba_type_translate(this.table[i].type);
             }
         }
+        
+        game_over = true;
     }
     else if(this.moves_done == this.total_moves)
     {
@@ -582,8 +592,11 @@ class GunsBombsAngels
             str = "It's a TIE! "+str
         }
         
-        alert(str)
+        this.sts_indicator.textContent = str;
+        game_over = true;
     }
+    
+    return game_over;
   }
   
   render(root_e)
@@ -707,6 +720,8 @@ class GunsBombsAngels
         this.sts_frme.appendChild(this.teams[i].get_team_box());
     }
     
+    
+    this.gba_div_out.appendChild(this.sts_indicator);
     this.gba_div_out.appendChild(this.sts_frme);
   }
   
