@@ -10,8 +10,9 @@ const GbaType = {
 const GbaTeamState = {
   Inactive: 0,
   Active: 1,
-  Target: 2,
-  Dead: 3
+  Pick: 2,
+  Target: 3,
+  Dead: 4
 };
 
 const GbaProb = {
@@ -98,7 +99,7 @@ class GbaCell
             this.is_hidden = false;
             this.cell.textContent = gba_type_translate(this.type);
             
-            this.gba.game_step(this.type);
+            this.gba.state_target_team(this.type);
         }
     }
     
@@ -191,6 +192,11 @@ class GbaTeam
     
     click_action()
     {
+        if (this.state == GbaTeamState.Pick)
+        {
+            this.gba.state_select_action(this.id);
+        }
+        
         if (this.state == GbaTeamState.Target)
         {
             switch(this.gba.cur_action)
@@ -203,7 +209,7 @@ class GbaTeam
                     break;
             }
             
-            this.gba.next_team();
+            this.gba.state_finalize_round();
         }
     }
     
@@ -245,6 +251,17 @@ class GbaTeam
         this.draw();
     }
     
+    pick()
+    {
+        if (this.state == GbaTeamState.Dead)
+        {
+            return;
+        }
+        
+        this.state = GbaTeamState.Pick;
+        this.draw();
+    }
+    
     draw()
     {
         this.team_box_lives.textContent = ""+this.lives
@@ -253,6 +270,9 @@ class GbaTeam
         {
             case GbaTeamState.Active:
                 str += "tb_active";
+                break;
+            case GbaTeamState.Pick:
+                str += "tb_pick";
                 break;
             case GbaTeamState.Target:
                 str += "tb_target";
@@ -333,7 +353,7 @@ class GunsBombsAngels
 {
   constructor()
   {
-    this.click_disable = false
+    this.click_disable = true
     this.cur_action = null
     this.cur_team = 0;
     this.team_cnt = 0;
@@ -368,13 +388,112 @@ class GunsBombsAngels
         this.render_game_status();
         this.render_table();
         this.hide_form();
-        this.start_game(Math.floor(Math.random() * this.team_cnt))
+        this.state_pick_team()
   }
   
-  start_game(cur_team)
+  state_pick_team()
   {
-    this.cur_team = cur_team;
-    this.teams[cur_team].activate();
+    this.click_disable = true;
+    document.body.className = "select-cursor";
+    for(let i = 0; i < this.team_cnt; i++)
+    {
+        if (!this.teams[i].is_dead())
+        {
+            this.teams[i].pick();
+        }
+    }
+  }
+  
+  state_select_action(cur_team_id)
+  {
+    this.cur_team = cur_team_id;
+    let cur_team = this.get_cur_team();
+    for(let i = 0; i < this.team_cnt; i++)
+    {
+        if (!this.teams[i].is_dead())
+        {
+            this.teams[i].deactivate();
+        }
+    }
+    cur_team.activate();
+    this.click_disable = false;
+  }
+  
+  state_target_team(action)
+  {
+    this.click_disable = true;
+    this.moves_done++;
+    let cur_team = this.get_cur_team();
+    let tgt_team = null;
+    this.cur_action = action;
+    switch(action)
+    {
+        case GbaType.Dagger:
+            tgt_team = this.pick_tgt_team(cur_team.get_id());
+            if (tgt_team != null)
+            {
+                tgt_team.take_dagger_hit();
+                tgt_team.draw();
+            }
+            else
+            {
+                document.body.className = "dagger-cursor";
+                return;
+            }
+            break;
+        case GbaType.Bomb:
+            cur_team.take_bomb_hit();
+            break;
+        case GbaType.Heart:
+            cur_team.take_heart();
+            break;
+        case GbaType.Gun:
+            tgt_team = this.pick_tgt_team(cur_team.get_id());
+            if (tgt_team != null)
+            {
+                tgt_team.take_gun_hit();
+                tgt_team.draw();
+            }
+            else
+            {
+                document.body.className = "gun-cursor";
+                return;
+            }
+            break;
+        case GbaType.Angel:
+            cur_team.take_angel();
+            break;
+        default:
+        case GbaType.Nothing:
+            break;
+    }
+    
+    cur_team.draw();
+    this.state_finalize_round();
+  }
+  
+  state_finalize_round()
+  {    
+    // Reset all team states.
+    for(let i = 0; i < this.team_cnt; i++)
+    {
+        if (!this.teams[i].is_dead())
+        {
+            this.teams[i].state = GbaTeamState.Inactive;
+            this.teams[i].draw();
+        }
+    }
+    
+    this.check_winner();
+    
+    do
+    {
+        this.cur_team = (this.cur_team + 1) % this.team_cnt;
+    } while (this.teams[this.cur_team].is_dead());
+    this.teams[this.cur_team].activate();
+    
+    document.body.className = "";
+    this.state_pick_team()
   }
   
   add_team(id)
@@ -415,11 +534,6 @@ class GunsBombsAngels
   get_cur_team()
   {
     return this.teams[this.cur_team]
-  }
-  
-  game_over()
-  {
-    
   }
   
   check_winner()
@@ -470,84 +584,6 @@ class GunsBombsAngels
         
         alert(str)
     }
-  }
-  
-  next_team()
-  {
-    
-    // Reset all team states.
-    for(let i = 0; i < this.team_cnt; i++)
-    {
-        if (!this.teams[i].is_dead())
-        {
-            this.teams[i].state = GbaTeamState.Inactive;
-            this.teams[i].draw();
-        }
-    }
-    
-    this.check_winner();
-    
-    do
-    {
-        this.cur_team = (this.cur_team + 1) % this.team_cnt;
-    } while (this.teams[this.cur_team].is_dead());
-    this.teams[this.cur_team].activate();
-    
-    document.body.className = "";
-    this.click_disable = false;
-  }
-  
-  game_step(action)
-  {
-    this.click_disable = true;
-    this.moves_done++;
-    let cur_team = this.get_cur_team();
-    let tgt_team = null
-    this.cur_action = action;
-    switch(action)
-    {
-        case GbaType.Dagger:
-            tgt_team = this.pick_tgt_team(cur_team.get_id());
-            if (tgt_team != null)
-            {
-                tgt_team.take_dagger_hit();
-                tgt_team.draw();
-            }
-            else
-            {
-                document.body.className = "dagger-cursor";
-                return;
-            }
-            break;
-        case GbaType.Bomb:
-            cur_team.take_bomb_hit();
-            break;
-        case GbaType.Heart:
-            cur_team.take_heart();
-            break;
-        case GbaType.Gun:
-            tgt_team = this.pick_tgt_team(cur_team.get_id());
-            if (tgt_team != null)
-            {
-                tgt_team.take_gun_hit();
-                tgt_team.draw();
-            }
-            else
-            {
-                document.body.className = "gun-cursor";
-                return;
-            }
-            break;
-        case GbaType.Angel:
-            cur_team.take_angel();
-            break;
-        default:
-        case GbaType.Nothing:
-            break;
-    }
-    
-    cur_team.draw();
-    this.next_team();
   }
   
   render(root_e)
@@ -734,7 +770,6 @@ class GunsBombsAngels
     this.gba_div_out.appendChild(frme);
   }
 }
-
 
 
 document.title = "Guns, Bombs & Angels!";
