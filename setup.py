@@ -1,11 +1,11 @@
-from setuptools import setup, find_packages
+import setuptools
 
 VERSION = '0.0.4'
 DESCRIPTION = 'Irregular Verbs Test Creator'
 LONG_DESCRIPTION = 'Irregular Verbs Test Creator'
 
 # Setting up
-setup(
+setuptools.setup(
     # the name must match the folder name 'verysimplemodule'
     name="teacher-ivtc",
     version=VERSION,
